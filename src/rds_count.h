@@ -54,7 +54,18 @@ extern rds_count_t rds;		// Reed switch pulse counter
 
 #ifdef GPIO_RDS1
 static inline uint8_t get_rds1_input(void) {
+	#ifdef GPIO_IR
+		gpio_set_output_en(GPIO_IR, 1);
+		gpio_set_input_en(GPIO_IR, 0);
+		gpio_write(GPIO_IR, 1);
+	#endif
+	gpio_set_input_en(GPIO_RDS1, 1);
 	uint8_t r = BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff)? 1 : 0;
+	#ifdef GPIO_IR
+		gpio_set_output_en(GPIO_IR, 0);
+		gpio_set_input_en(GPIO_IR, 1);
+		gpio_write(GPIO_IR, 0);
+	#endif
 	if(trg.rds.rs1_invert)
 		r ^= 1;
 	return r;

@@ -44,7 +44,7 @@ extern "C" {
 #define DEVICE_ZTH02   		28	// ZigBee ZTH02
 
 #ifndef DEVICE_TYPE
-#define DEVICE_TYPE			DEVICE_LYWSD03MMC
+#define DEVICE_TYPE			DEVICE_TNK01
 #endif
 
 // supported services by the device (bits)
@@ -1167,14 +1167,13 @@ extern "C" {
 		| SERVICE_KEY \
 		| SERVICE_TIME_ADJUST \
 		| SERVICE_TH_TRG \
-		| SERVICE_LED \
 		| SERVICE_PRESSURE \
 )
 
-#define USE_EPD					0 // min update time ms
+#define USE_EPD					500 // min update time ms
 
 #define USE_SENSOR_CHT8305		0
-#define USE_SENSOR_AHT20_30		1
+#define USE_SENSOR_AHT20_30		0
 #define USE_SENSOR_SHT4X		0
 #define USE_SENSOR_SHTC3		0
 #define USE_SENSOR_SHT30		0
@@ -1204,12 +1203,12 @@ extern "C" {
 #define PA7_FUNC			AS_GPIO
 #define PULL_WAKEUP_SRC_PA7	PM_PIN_PULLUP_10K
 
-#define GPIO_LED			GPIO_PB4 // (LED E)
-#define PB4_INPUT_ENABLE	1
-#define PB4_DATA_OUT		1
-#define PB4_OUTPUT_ENABLE	0
-#define PB4_FUNC			AS_GPIO
-#define PULL_WAKEUP_SRC_PB4	PM_PIN_PULLDOWN_100K
+#define GPIO_IR				GPIO_PB5
+#define PB5_INPUT_ENABLE	1
+#define PB5_DATA_OUT		1
+#define PB5_OUTPUT_ENABLE	0
+#define PB5_FUNC			AS_GPIO
+#define PULL_WAKEUP_SRC_PB5	PM_PIN_PULLDOWN_100K
 
 #define GPIO_TRG			GPIO_PA1
 #define PA1_INPUT_ENABLE	1
@@ -1228,13 +1227,13 @@ extern "C" {
 #define PD3_FUNC			AS_GPIO
 #define PULL_WAKEUP_SRC_PD3	RDS1_PULLUP
 
-#define RDS2_PULLUP			PM_PIN_PULLUP_10K
-#define GPIO_RDS2			GPIO_PD4	// Reed Switch "Low", input
-#define PD4_INPUT_ENABLE	1
-#define PD4_DATA_OUT		0
-#define PD4_OUTPUT_ENABLE	0
-#define PD4_FUNC			AS_GPIO
-#define PULL_WAKEUP_SRC_PD4 RDS2_PULLUP
+// #define RDS2_PULLUP			PM_PIN_PULLUP_10K
+// #define GPIO_RDS2			GPIO_PD4	// Reed Switch "Low", input
+// #define PD4_INPUT_ENABLE	1
+// #define PD4_DATA_OUT		0
+// #define PD4_OUTPUT_ENABLE	0
+// #define PD4_FUNC			AS_GPIO
+// #define PULL_WAKEUP_SRC_PD4 RDS2_PULLUP
 
 #define USE_SENSOR_HX71X	1
 
