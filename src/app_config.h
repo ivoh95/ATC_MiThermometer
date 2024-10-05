@@ -1165,9 +1165,7 @@ extern "C" {
 		| SERVICE_THS \
 		| SERVICE_RDS \
 		| SERVICE_KEY \
-		| SERVICE_TIME_ADJUST \
 		| SERVICE_TH_TRG \
-		| SERVICE_PRESSURE \
 )
 
 #define USE_EPD					500 // min update time ms
@@ -1227,15 +1225,7 @@ extern "C" {
 #define PD3_FUNC			AS_GPIO
 #define PULL_WAKEUP_SRC_PD3	RDS1_PULLUP
 
-// #define RDS2_PULLUP			PM_PIN_PULLUP_10K
-// #define GPIO_RDS2			GPIO_PD4	// Reed Switch "Low", input
-// #define PD4_INPUT_ENABLE	1
-// #define PD4_DATA_OUT		0
-// #define PD4_OUTPUT_ENABLE	0
-// #define PD4_FUNC			AS_GPIO
-// #define PULL_WAKEUP_SRC_PD4 RDS2_PULLUP
-
-#define USE_SENSOR_HX71X	1
+#define USE_SENSOR_HX71X	0
 
 #define GPIO_HX71X_SCK		GPIO_PC3
 #define PC3_INPUT_ENABLE	1

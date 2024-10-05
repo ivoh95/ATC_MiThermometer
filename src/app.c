@@ -837,12 +837,6 @@ void main_loop(void) {
 		}
 		bls_pm_setSuspendMask (SUSPEND_ADV | SUSPEND_CONN);
 	} else {
-#if (DEV_SERVICES & SERVICE_RDS)
-#ifndef GPIO_RDS2
-		if(trg.rds.type1 != RDS_NONE) // rds: switch or counter
-#endif
-			rds_task();
-#endif
 #if USE_SENSOR_HX71X && (DEV_SERVICES & SERVICE_PRESSURE)
 		hx71x_task();
 #endif
@@ -929,6 +923,12 @@ void main_loop(void) {
 			check_battery();
 			WakeupLowPowerCb(0);
 #else
+#if (DEV_SERVICES & SERVICE_RDS)
+#ifndef GPIO_RDS2
+		if(trg.rds.type1 != RDS_NONE) // rds: switch or counter
+#endif
+			rds_task();
+#endif
 			check_battery();
 			start_measure_sensor_deep_sleep();
 #if (DEV_SERVICES & SERVICE_PRESSURE)
