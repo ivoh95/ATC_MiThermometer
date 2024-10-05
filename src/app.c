@@ -342,8 +342,8 @@ void test_config(void) {
 
 	// measurement_step_time = adv_interval * 62.5 * measure_interval, max 250 sec
 	if (cfg.measure_interval < 2)
-		cfg.measure_interval = 2; // T = cfg.measure_interval * advertising_interval_ms (ms),  Tmin = 1 * 1*62.5 = 62.5 ms / 1 * 160 * 62.5 = 10000 ms
 	measurement_step_time = adv_interval * (uint32_t)cfg.measure_interval;
+		cfg.measure_interval = 1; // T = cfg.measure_interval * advertising_interval_ms (ms),  Tmin = 1 * 1*62.5 = 62.5 ms / 1 * 160 * 62.5 = 10000 ms
 	// test overflow 250 sec
 	uint32_t tmp = 400000 - adv_interval; // 250000000us/6250=400000
 	if(measurement_step_time > tmp) {
