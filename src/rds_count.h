@@ -60,7 +60,22 @@ static inline uint8_t get_rds1_input(void) {
 		gpio_write(GPIO_IR, 1);
 	#endif
 	gpio_set_input_en(GPIO_RDS1, 1);
-	uint8_t r = BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff)? 1 : 0;
+	uint8_t numberOfSamples = 24; 
+	uint8_t highSamples = 0; 
+	uint8_t lowSamples = 0;
+
+	for (int i = 0; i<numberOfSamples; i++){
+		uint8_t thisSample = BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff)? 1 : 0;
+		if (thisSample){ //high sample
+			highSamples++;
+		} else{ //low sample
+			lowSamples++;
+		}
+	}
+	uint8_t r = 0; 
+	if(highSamples > (numberOfSamples-6)){ // 80 percent of the samples or greater were high. 
+		r = 1; 
+	}
 	#ifdef GPIO_IR
 		gpio_set_output_en(GPIO_IR, 0);
 		gpio_set_input_en(GPIO_IR, 1);
