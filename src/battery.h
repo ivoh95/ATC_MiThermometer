@@ -2,10 +2,10 @@
 #define _BATTERY_H_
 
 
-#define MAX_VBAT_MV		3000 // 3100 mV - > battery = 100% no load, 2950 at load (during measurement)
+#define MAX_VBAT_MV		2600 // 3100 mV - > battery = 100% no load, 2950 at load (during measurement)
 #define MIN_VBAT_MV		2200 // 2200 mV - > battery = 0%
 
-#define LOW_VBAT_MV		2800 // level set LOW_CONNECT_LATENCY
+#define LOW_VBAT_MV		2400 // level set LOW_CONNECT_LATENCY
 #define END_VBAT_MV		2000 // It is not recommended to write Flash below 2V, go to deep-sleep
 
 u16 get_adc_mv(u32 p_ain);
