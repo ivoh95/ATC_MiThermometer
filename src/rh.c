@@ -13,11 +13,11 @@
 #include "app.h"
 #include "flash_eep.h"
 
-#define DEF_PWM_TIK		54000 // DEF_PWM_TIK/CLOCK_16M_SYS_TIMER_CLK_1US = 4000 us, for С = 47 nF
+#define DEF_PWM_TIK		9000000 // DEF_PWM_TIK/CLOCK_16M_SYS_TIMER_CLK_1US = 4000 us, for С = 47 nF
 #define DEF_U_POWER		3100 // 3300 mV
 #define U_DIODE			1350 // sensor_cfg.coef.val1_z //  Diode Voltage drop at 8 MHz (mV). Using a diode marked "T4"
 #define DEF_ADC_RH0		1180 // ADC value at 100% and supply voltage 3.300V
-#define VAL_RH0			3475 // The cube root of 41943040000 is: 3474.454549241, (3475*3475*3475)>>22 = 10004
+#define VAL_RH0			12000 // The cube root of 41943040000 is: 3474.454549241, (3475*3475*3475)>>22 = 10004
 
 #define TIM_PWM_MAX		(7 * CLOCK_16M_SYS_TIMER_CLK_1MS) // min time PWM
 #define TIM_PWM_MIN		(2 * CLOCK_16M_SYS_TIMER_CLK_1MS) // max time PWM
