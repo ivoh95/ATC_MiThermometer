@@ -68,7 +68,7 @@ extern "C" {
 //#define TEST_PLM1 			1  // TB03F My Plant monitor
 
 #ifndef DEVICE_TYPE
-#define DEVICE_TYPE			DEVICE_LYWSD03MMC
+#define DEVICE_TYPE			DEVICE_TB03F
 #endif
 
 // supported services by the device (bits)
@@ -1496,7 +1496,7 @@ extern "C" {
 #define USE_SENSOR_INA3221		0
 #endif
 #ifndef USE_SENSOR_ENS160
-#define USE_SENSOR_ENS160		0
+#define USE_SENSOR_ENS160		1
 #endif
 #ifndef USE_SENSOR_SCD41
 #define USE_SENSOR_SCD41		0
@@ -1561,12 +1561,12 @@ extern "C" {
 #define PD4_FUNC			AS_GPIO
 #define PULL_WAKEUP_SRC_PD4 PM_PIN_PULLUP_10K
 
-#define GPIO_COOLER			GPIO_PD3
-#define PD3_INPUT_ENABLE	1
-#define PD3_DATA_OUT		0
-#define PD3_OUTPUT_ENABLE	0
-#define PD3_FUNC			AS_GPIO
-#define PULL_WAKEUP_SRC_PD3 PM_PIN_PULLDOWN_100K
+// #define GPIO_COOLER			GPIO_PD3
+// #define PD3_INPUT_ENABLE	1
+// #define PD3_DATA_OUT		0
+// #define PD3_OUTPUT_ENABLE	0
+// #define PD3_FUNC			AS_GPIO
+// #define PULL_WAKEUP_SRC_PD3 PM_PIN_PULLDOWN_100K
 
 #elif USE_SENSOR_INA226 || USE_SENSOR_INA3221
 
