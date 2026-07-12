@@ -70,7 +70,7 @@ extern "C" {
 //#define TEST_PLM1 			1  // TB03F My Plant monitor
 
 #ifndef DEVICE_TYPE
-#define DEVICE_TYPE			DEVICE_TS0201
+#define DEVICE_TYPE			DEVICE_TB03F
 #endif
 
 // supported services by the device (bits)
