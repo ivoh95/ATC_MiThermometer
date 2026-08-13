@@ -13,7 +13,7 @@
 #endif
 #include "app.h"
 #include "flash_eep.h"
-#if (DEV_SERVICES & SERVICE_TH_TRG)
+#if (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
 #include "trigger.h"
 #include "rds_count.h"
 #endif
@@ -394,7 +394,9 @@ void cmd_parser(void * p) {
 			rds_init();
 #endif
 			flash_write_cfg(&trg, EEP_ID_TRG, FEEP_SAVE_SIZE_TRG);
+#if (DEV_SERVICES & SERVICE_TH_TRG)
 			test_trg_on();
+#endif
 			ble_send_trg();
 		} else if (cmd == CMD_ID_TRG_OUT) { // Set trg out
 			if (len)

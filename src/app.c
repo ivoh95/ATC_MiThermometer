@@ -170,6 +170,11 @@ const cfg_t def_cfg = {
 #if (DEV_SERVICES & SERVICE_HISTORY)
 		.averaging_measurements = 200, // * measure_interval = 3 * 200 = 600 sec = 10 minutes
 #endif
+#elif (DEVICE_TYPE == DEVICE_IRWM)
+		.flg2.adv_flags = true,
+		.advertising_interval = 96, // x 62.5 ms = 6 sec (report cadence; IR sampling is decoupled)
+		.measure_interval = 2, // x advertising_interval = 12 sec (battery/housekeeping wake)
+		.hw_ver = DEVICE_TYPE,
 #elif (DEVICE_TYPE == DEVICE_TB03F)
 		.flg2.adv_flags = true,
 		.hw_ver = DEVICE_TYPE,
@@ -1132,7 +1137,9 @@ void main_loop(void) {
 		if (wrk.start_measure) {
 			wrk.start_measure = 0;
 			check_battery();
+#if (DEV_SERVICES & (SERVICE_THS | SERVICE_IUS | SERVICE_18B20 | SERVICE_PLM))
 			read_sensors();
+#endif
 #if (DEV_SERVICES & SERVICE_THS) && (!USE_SENSOR_SHTC3) && !USE_SENSOR_SCD41
 			start_measure_sensor_deep_sleep();
 #endif

@@ -106,6 +106,7 @@ void test_trg_on(void) {
 #define measured_val2	measured_data.humi
 #endif
 
+#if (DEV_SERVICES & SERVICE_TH_TRG)
 _attribute_ram_code_
 __attribute__((optimize("-Os")))
 void set_trigger_out(void) {
@@ -162,5 +163,6 @@ void set_trigger_out(void) {
 
 	test_trg_on();
 }
+#endif // (DEV_SERVICES & SERVICE_TH_TRG)
 
 #endif  // (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
