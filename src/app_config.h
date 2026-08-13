@@ -1507,6 +1507,10 @@ extern "C" {
 
 #define USE_AVERAGE_BATTERY 1  // =0 - Off, =1 - On
 
+// Battery voltage->percent preset (see battery.h). Switch to BATT_TYPE_NIMH or
+// BATT_TYPE_COIN here to match the pack.
+#define BATTERY_TYPE		BATT_TYPE_ALKALINE
+
 #define SHL_ADC_VBAT		1  // "B0P" in adc.h
 #define GPIO_VBAT			GPIO_PB0
 #define PB0_INPUT_ENABLE	1
