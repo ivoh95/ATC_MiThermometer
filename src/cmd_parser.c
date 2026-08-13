@@ -371,6 +371,13 @@ void cmd_parser(void * p) {
 			flash_write_cfg(&cfg, EEP_ID_CFG, sizeof(cfg));
 			ble_send_cfg();
 		} else if (cmd == CMD_ID_CFG_DEF) { // Set default config
+#if (DEVICE_TYPE == DEVICE_IRWM)
+			// Full factory reset (cfg + trg) with reboot - identical to the GPIO long-press.
+			// On IRWM the IR sample/idle/deep-idle periods + ml_per_pulse live in trg, so a
+			// cfg-only reset would leave stale timings; route through set_default_cfg() to
+			// clear both and reboot from the freshly written flash defaults.
+			set_default_cfg();
+#else
 			u8 tmp = ((volatile u8 *)&cfg.flg2)[0];
 			memcpy(&cfg, &def_cfg, sizeof(cfg));
 			test_config();
@@ -383,6 +390,7 @@ void cmd_parser(void * p) {
 			ev_adv_timeout(0, 0, 0);
 			flash_write_cfg(&cfg, EEP_ID_CFG, sizeof(cfg));
 			ble_send_cfg();
+#endif
 #if (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
 		} else if (cmd == CMD_ID_TRG) { // Get/set trg data
 			if (len) {

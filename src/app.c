@@ -750,6 +750,14 @@ void set_default_cfg(void) {
 	memcpy(&cfg, &def_cfg, sizeof(cfg));
 	test_config();
 	flash_write_cfg(&cfg, EEP_ID_CFG, sizeof(cfg));
+#if (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
+	// Restore trigger config too. On IRWM these fields carry the IR
+	// sample/idle/deep-idle periods + ml_per_pulse; a unit flashed over an old
+	// build keeps stale EEP_ID_TRG bytes, so a factory reset must clear them as
+	// well. The reboot below re-inits everything from the freshly written flash.
+	memcpy(&trg, &def_trg, FEEP_SAVE_SIZE_TRG);
+	flash_write_cfg(&trg, EEP_ID_TRG, FEEP_SAVE_SIZE_TRG);
+#endif
 	SHOW_REBOOT_SCREEN();
 	go_sleep(2*CLOCK_16M_SYS_TIMER_CLK_1S); // go deep-sleep 2 sec
 }
