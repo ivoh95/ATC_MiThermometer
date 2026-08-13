@@ -1145,6 +1145,13 @@ void main_loop(void) {
 		if (wrk.start_measure) {
 			wrk.start_measure = 0;
 			check_battery();
+#if (DEVICE_TYPE == DEVICE_IRWM)
+			// No T/H sensor here, so read_sensors() (which normally sets these flags) is
+			// compiled out. Flag a completed measurement ourselves so the periodic BTHome
+			// data beacon (battery + count + water, alternating with voltage) refreshes in
+			// set_adv_data(); otherwise only the RDS count-only event beacon is ever sent.
+			wrk.msc.all_flgs = 0xff;
+#endif
 #if (DEV_SERVICES & (SERVICE_THS | SERVICE_IUS | SERVICE_18B20 | SERVICE_PLM))
 			read_sensors();
 #endif
