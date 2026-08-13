@@ -28,6 +28,12 @@ _attribute_ram_code_ __attribute__((optimize("-Os")))
 static u32 set_bthome_data1(padv_bthome_data1_t p) {
 		p->b_id = BtHomeID_battery;
 		p->battery_level = measured_data.battery_level;
+#if (DEVICE_TYPE == DEVICE_IRWM)
+		p->c_id = BtHomeID_count32;
+		p->counter = rds.count1;                          // raw pulse count
+		p->w_id = BtHomeID_water32;
+		p->water = (u32)rds.count1 * trg.ml_per_pulse;    // volume, 0.001 L (wrap ok)
+#endif
 #if (DEV_SERVICES & SERVICE_18B20)
 		p->t1_id = BtHomeID_temperature;
 		p->temperature1 = measured_data.xtemp[0]; // x0.01 C
