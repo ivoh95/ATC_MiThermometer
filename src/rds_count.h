@@ -50,12 +50,55 @@ typedef struct _rds_count_t {
 extern rds_count_t rds;		// Reed switch pulse counter
 
 #ifdef GPIO_RDS1
+#ifdef GPIO_IR
+// IR optical pulse read (DEVICE_IRWM). The IR emitter is strobed on only for the
+// sample. As the meter's fork crosses the beam the receiver dwells near the input
+// threshold, so a single threshold would chatter and over-count; two thresholds
+// plus a held state give a dead-band (values between them keep the previous level),
+// so one tooth = exactly one edge.
+#ifndef IR_SAMPLES
+#define IR_SAMPLES		24		// reads per strobe
+#endif
+#ifndef IR_HI_THRES
+#define IR_HI_THRES		20		// >= this many high reads -> beam clear
+#endif
+#ifndef IR_LO_THRES
+#define IR_LO_THRES		4		// <= this many high reads -> beam blocked
+#endif
+#ifndef IR_SETTLE_US
+#define IR_SETTLE_US	3		// emitter/receiver settle before sampling
+#endif
+extern u8 rds1_beam_state;		// persisted dead-band state (pre-invert)
+
+static inline u8 get_rds1_input(void) {
+	gpio_set_output_en(GPIO_IR, 1);
+	gpio_write(GPIO_IR, 1);				// strobe IR emitter on
+	sleep_us(IR_SETTLE_US);
+	u8 high = 0;
+	for (u8 i = 0; i < IR_SAMPLES; i++) {
+		if (BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff))
+			high++;
+	}
+	gpio_write(GPIO_IR, 0);				// emitter off
+	gpio_set_output_en(GPIO_IR, 0);
+	if (high >= IR_HI_THRES)
+		rds1_beam_state = 1;			// beam clear
+	else if (high <= IR_LO_THRES)
+		rds1_beam_state = 0;			// beam blocked
+	// between the thresholds: hold the previous state (dead-band)
+	u8 r = rds1_beam_state;
+	if(trg.rds.rs1_invert)
+		r ^= 1;
+	return r;
+}
+#else
 static inline u8 get_rds1_input(void) {
 	u8 r = BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff)? 1 : 0;
 	if(trg.rds.rs1_invert)
 		r ^= 1;
 	return r;
 }
+#endif // GPIO_IR
 
 static inline void rds1_input_on(void) {
 	gpio_setup_up_down_resistor(GPIO_RDS1, RDS1_PULLUP);

@@ -33,6 +33,9 @@ extern u8 app_adv_set_param[];
 #endif
 
 RAM	rds_count_t rds;		// Reed switch pulse counter
+#ifdef GPIO_IR
+RAM u8 rds1_beam_state;		// dead-band state for the IR optical read (get_rds1_input)
+#endif
 
 _attribute_ram_code_
 void rds_input_off(void) {
