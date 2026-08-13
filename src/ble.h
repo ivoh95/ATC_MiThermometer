@@ -153,6 +153,13 @@ typedef enum
 	ANA_VALUE_INPUT_DP_H,					//UUID: 2A1F 	VALUE: analog value (uint16)
 	ANA_VALUE_INPUT_CCB_H,					//UUID: 2902, 	VALUE: anapValCCC
 #endif
+#if (DEVICE_TYPE == DEVICE_IRWM)
+	//// Environmental Sensing (0x181A, empty) ////
+	// Marks the device as a full custom device for TelinkMiFlasher (devIdEnabled).
+	/**********************************************************************************************/
+	ENV_PS_H,								//UUID: 2800, 	VALUE: uuid 181A
+	ENV_DESC_H,								//UUID: 2901, 	VALUE: my_EnvName
+#endif
 	//// Telink OTA ////
 	/**********************************************************************************************/
 	OTA_PS_H, 								//UUID: 2800, 	VALUE: telink ota service uuid

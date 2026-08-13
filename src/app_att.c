@@ -377,6 +377,9 @@ static const u16 mi_primary_service_uuid = 0xfe95;
 #if (!defined(USE_MIHOME) || USE_MIHOME == 0)
 static const u8  my_MiName[] = {'M', 'i'};
 #endif
+#if (DEVICE_TYPE == DEVICE_IRWM)
+static const u8  my_EnvName[] = {'I', 'R', 'W'};
+#endif
 
 //// GAP attribute values
 static const u8 my_devNameCharVal[5] = {
@@ -537,6 +540,14 @@ RAM attribute_t my_Attributes[] = {
 		{0,ATT_PERMISSIONS_READ,2,sizeof(my_anaCharVal),(u8*)(&my_characterUUID),(u8*)(my_anaCharVal), 0},				//prop
 		{0,ATT_PERMISSIONS_READ,2,sizeof(measured_data.voltage),(u8*)(&my_anaCharUUID),(u8*)(&measured_data.voltage), 0},	//value
 		{0,ATT_PERMISSIONS_RDWR,2,sizeof(anaValueInCCC),(u8*)(&clientCharacterCfgUUID),(u8*)(&anaValueInCCC), 0},	//value
+#endif
+#if (DEVICE_TYPE == DEVICE_IRWM)
+	////////////////////////////////////// Environmental Sensing (0x181A, empty) ////////////////////
+	// No sensor characteristics - present only so TelinkMiFlasher's customAction() sees the 0x181A
+	// service (devIdEnabled) and renders the full custom settings UI (with the 0x56 "Set default"
+	// button + counter/trigger config) instead of the cut-down ATC1441 command panel.
+	{2,ATT_PERMISSIONS_READ,2,2,(u8*)(&my_primaryServiceUUID),(u8*)(&my_envServiceUUID), 0},
+		{0,ATT_PERMISSIONS_READ,2,sizeof(my_EnvName),(u8*)(&userdesc_UUID),(u8*)(my_EnvName), 0},
 #endif
 	////////////////////////////////////// OTA /////////////////////////////////////////////////////
 	// 0027 - 002A
