@@ -35,7 +35,15 @@ typedef struct __attribute__((packed)) _rds_type_t {
 #endif
 
 typedef struct __attribute__((packed)) _trigger_t {
-#if (DEV_SERVICES & SERVICE_TH_TRG)
+#if (DEVICE_TYPE == DEVICE_IRWM)
+	// IR water-meter config. Byte-compatible with the TelinkMiFlasher CMD_ID_TRG
+	// (0x44) fields, so the stock flasher can set them (it scales the value x100
+	// on the threshold/hysteresis inputs, so enter raw/100, e.g. 25 -> "0.25"):
+	u16 sample_active_ms;   // <- "Temperature threshold": sample period while flowing
+	u16 sample_idle_ms;     // <- "Humidity threshold": sample period when idle
+	u16 sample_deepidle_ms; // <- "Temperature hysteresis": period after long silence
+	u16 ml_per_pulse;       // <- "Humidity hysteresis": volume per pulse, 0.001 L units
+#elif (DEV_SERVICES & SERVICE_TH_TRG)
 	s16 temp_threshold; // x0.01°, Set temp threshold
 	s16 humi_threshold; // x0.01%, Set humi threshold
 	s16 temp_hysteresis; // Set temp hysteresis, -327.67..327.67 °

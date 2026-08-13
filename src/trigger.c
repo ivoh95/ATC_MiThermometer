@@ -15,6 +15,15 @@
 #if (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
 
 const trigger_t def_trg = {
+#if (DEVICE_TYPE == DEVICE_IRWM)
+		.sample_active_ms = 25,     // ~40 Hz while flowing (>= 4x max ~8 Hz pulse)
+		.sample_idle_ms = 100,      // 10 Hz when idle
+		.sample_deepidle_ms = 1000, // 1 Hz after a long quiet spell
+		.ml_per_pulse = 500,        // 0.5 L per pulse (0.001 L units)
+		.rds_time_report = 600,     // force a fresh report every 10 min
+		.rds.type1 = RDS_COUNTER,
+		.rds.type2 = RDS_NONE,
+#else
 #if (DEV_SERVICES & (SERVICE_THS | SERVICE_IUS | SERVICE_18B20))
 #if USE_SENSOR_INA3221
 #ifdef	GPIO_TRG2
@@ -44,6 +53,7 @@ const trigger_t def_trg = {
 		.rds.type1 = RDS_CONNECT,
 #endif
 		.rds.type2 = RDS_NONE
+#endif
 #endif
 };
 
