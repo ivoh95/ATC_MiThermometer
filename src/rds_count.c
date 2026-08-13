@@ -34,7 +34,41 @@ extern u8 app_adv_set_param[];
 
 RAM	rds_count_t rds;		// Reed switch pulse counter
 #ifdef GPIO_IR
-RAM u8 rds1_beam_state;		// dead-band state for the IR optical read (get_rds1_input)
+RAM u8  rds1_beam_state;		// dead-band state for the IR optical read (get_rds1_input)
+RAM u32 rds1_last_edge_tick;	// clock_time() of the last counted pulse edge
+
+// Flow-state timeouts (compile-time). The sample PERIODS themselves are runtime-
+// configurable via the flasher (sample_active_ms / sample_idle_ms / sample_deepidle_ms).
+#ifndef IR_FLOW_HOLD_MS
+#define IR_FLOW_HOLD_MS			2000	// stay at the active rate this long after an edge
+#endif
+#ifndef IR_DEEPIDLE_ENTER_MS
+#define IR_DEEPIDLE_ENTER_MS	120000	// drop to the deep-idle rate after this much silence
+#endif
+
+// Wake callback: the actual IR sample runs in main_loop -> rds_task after the wake,
+// so this only needs to exist for the low-power timer wake to fire.
+_attribute_ram_code_
+static void irwm_ir_wakeup_cb(int par) { (void)par; }
+
+// Schedule the next IR sample wake, adapting the period to time-since-last-pulse:
+// flowing -> active rate, quiet -> idle rate, long silence -> deep-idle rate.
+_attribute_ram_code_
+static void irwm_schedule_next_sample(void) {
+	u32 now = clock_time();
+	u32 quiet_ms = (now - rds1_last_edge_tick) / CLOCK_16M_SYS_TIMER_CLK_1MS;
+	u16 period_ms;
+	if (quiet_ms < IR_FLOW_HOLD_MS)
+		period_ms = trg.sample_active_ms;
+	else if (quiet_ms < IR_DEEPIDLE_ENTER_MS)
+		period_ms = trg.sample_idle_ms;
+	else
+		period_ms = trg.sample_deepidle_ms;
+	if (period_ms == 0)
+		period_ms = 100;				// guard against an unset/zero config
+	bls_pm_registerAppWakeupLowPowerCb(irwm_ir_wakeup_cb);
+	bls_pm_setAppWakeupLowPower(now + (u32)period_ms * CLOCK_16M_SYS_TIMER_CLK_1MS, 1);
+}
 #endif
 
 _attribute_ram_code_
@@ -85,6 +119,10 @@ void rds_init(void) {
 	}
 #endif
 	rds.report_tick = wrk.utc_time_sec;
+#ifdef GPIO_IR
+	rds1_last_edge_tick = clock_time();
+	irwm_schedule_next_sample(); // bootstrap the adaptive IR sample wake
+#endif
 }
 
 //_attribute_ram_code_
@@ -260,6 +298,9 @@ void rds_task(void) {
 				// RDS1 off event, key released event
 				trg.flg.rds1_input = 0;
 				rds.count1++;
+#ifdef GPIO_IR
+				rds1_last_edge_tick = clock_time();
+#endif
 #if USE_WK_RDS_COUNTER32 // save 32 bits?
 				if (rds.count_short[0] == 0) {
 					flash_write_cfg(&rds.count_short[1], EEP_ID_RPC, sizeof(rds.count_short[1]));
@@ -307,6 +348,9 @@ void rds_task(void) {
 		}
 		rds.event = RDS_NONE;
 	}
+#ifdef GPIO_IR
+	irwm_schedule_next_sample(); // re-arm the adaptive IR sample wake
+#endif
 }
 
 #endif // #if (DEV_SERVICES & SERVICE_RDS)
