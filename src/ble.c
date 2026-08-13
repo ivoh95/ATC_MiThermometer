@@ -499,6 +499,11 @@ void ble_set_name(void) {
 		ble_name[3] = 'N';
 		ble_name[4] = 'K';
 		ble_name[5] = '_';
+#elif DEVICE_TYPE == DEVICE_IRWM
+		ble_name[2] = 'I';
+		ble_name[3] = 'R';
+		ble_name[4] = 'W';
+		ble_name[5] = 'M';
 #elif DEVICE_TYPE == DEVICE_TB03F
 #if USE_SDM_OUT
 		ble_name[2] = 'S';
