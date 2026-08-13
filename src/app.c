@@ -796,7 +796,7 @@ void user_init_normal(void) {//this will get executed one time after power up
 				!= sizeof(pincode))
 			pincode = 0;
 #endif
-#if (DEV_SERVICES & SERVICE_TH_TRG)
+#if (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
 		if (flash_read_cfg(&trg, EEP_ID_TRG, FEEP_SAVE_SIZE_TRG)
 				!= FEEP_SAVE_SIZE_TRG)
 			memcpy(&trg, &def_trg, FEEP_SAVE_SIZE_TRG);
@@ -829,7 +829,7 @@ void user_init_normal(void) {//this will get executed one time after power up
 #if (DEV_SERVICES & SERVICE_SCREEN)
 		memcpy(&cmf, &def_cmf, sizeof(cmf));
 #endif
-#if (DEV_SERVICES & SERVICE_TH_TRG)
+#if (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
 		memcpy(&trg, &def_trg, FEEP_SAVE_SIZE_TRG);
 #endif
 #if (DEV_SERVICES & SERVICE_PRESSURE) && USE_SENSOR_HX71X
