@@ -66,7 +66,10 @@ extern rds_count_t rds;		// Reed switch pulse counter
 #define IR_LO_THRES		4		// <= this many high reads -> beam blocked
 #endif
 #ifndef IR_SETTLE_US
-#define IR_SETTLE_US	3		// emitter/receiver settle before sampling
+// Emitter-on to sample delay. The original working branch used 0 here (sampled
+// immediately) with the 1M pull-up, so a few us is plenty; the small margin just
+// covers the receiver's turn-on with the weak pull-up.
+#define IR_SETTLE_US	20		// emitter/receiver settle before sampling
 #endif
 extern u8 rds1_beam_state;		// persisted dead-band state (pre-invert)
 

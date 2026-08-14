@@ -1540,8 +1540,11 @@ extern "C" {
 #define PA1_FUNC			AS_GPIO
 #define PULL_WAKEUP_SRC_PA1	PM_PIN_PULLDOWN_100K
 
-// IR receiver output: pulse input (reuses the RDS1 counter path)
-#define RDS1_PULLUP			PM_PIN_PULLUP_10K
+// IR receiver output: pulse input (reuses the RDS1 counter path). Use the WEAK 1M
+// pull-up (as the original working branch did): a 10K pull-up sources ~0.3 mA and the
+// IR receiver can't sink that when the beam is clear, so PD3 stays high in both states
+// (beam always reads "clear" -> no edges -> no counting).
+#define RDS1_PULLUP			PM_PIN_PULLUP_1M
 #define GPIO_RDS1			GPIO_PD3
 #define PD3_INPUT_ENABLE	1
 #define PD3_DATA_OUT		0
