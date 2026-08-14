@@ -37,13 +37,13 @@ RAM	rds_count_t rds;		// Reed switch pulse counter
 RAM u8  rds1_beam_state;		// dead-band state for the IR optical read (get_rds1_input)
 RAM u32 rds1_last_edge_tick;	// clock_time() of the last counted pulse edge
 
-// Flow-state timeouts (compile-time). The sample PERIODS themselves are runtime-
-// configurable via the flasher (sample_active_ms / sample_idle_ms / sample_deepidle_ms).
+// How long after a pulse edge to keep the fast dedicated sample wake armed. While
+// "flowing" the device wakes every sample_active_ms for clean edge capture; once idle
+// the dedicated app wake is CLEARED so the device deep-sleeps on the advertising
+// schedule (rds_task still samples on each advert to catch flow onset). A permanent
+// app wake blocks deep sleep and drains the battery, so idle must release it.
 #ifndef IR_FLOW_HOLD_MS
-#define IR_FLOW_HOLD_MS			2000	// stay at the active rate this long after an edge
-#endif
-#ifndef IR_DEEPIDLE_ENTER_MS
-#define IR_DEEPIDLE_ENTER_MS	120000	// drop to the deep-idle rate after this much silence
+#define IR_FLOW_HOLD_MS			2000	// stay in fast-sample mode this long after an edge
 #endif
 
 // Wake callback: the actual IR sample runs in main_loop -> rds_task after the wake,
@@ -51,23 +51,21 @@ RAM u32 rds1_last_edge_tick;	// clock_time() of the last counted pulse edge
 _attribute_ram_code_
 static void irwm_ir_wakeup_cb(int par) { (void)par; }
 
-// Schedule the next IR sample wake, adapting the period to time-since-last-pulse:
-// flowing -> active rate, quiet -> idle rate, long silence -> deep-idle rate.
+// Arm the fast dedicated sample wake only while flow is recent; otherwise release it
+// so the device can deep-sleep between adverts.
 _attribute_ram_code_
 static void irwm_schedule_next_sample(void) {
 	u32 now = clock_time();
-	u32 quiet_ms = (now - rds1_last_edge_tick) / CLOCK_16M_SYS_TIMER_CLK_1MS;
-	u16 period_ms;
-	if (quiet_ms < IR_FLOW_HOLD_MS)
-		period_ms = trg.sample_active_ms;
-	else if (quiet_ms < IR_DEEPIDLE_ENTER_MS)
-		period_ms = trg.sample_idle_ms;
-	else
-		period_ms = trg.sample_deepidle_ms;
-	if (period_ms == 0)
-		period_ms = 100;				// guard against an unset/zero config
-	bls_pm_registerAppWakeupLowPowerCb(irwm_ir_wakeup_cb);
-	bls_pm_setAppWakeupLowPower(now + (u32)period_ms * CLOCK_16M_SYS_TIMER_CLK_1MS, 1);
+	// Wrap-safe "recent edge?" test (signed diff is correct for intervals < ~134 s).
+	s32 since_edge = (s32)(now - rds1_last_edge_tick);
+	if (since_edge >= 0
+			&& (u32)since_edge < (u32)IR_FLOW_HOLD_MS * CLOCK_16M_SYS_TIMER_CLK_1MS) {
+		u16 period_ms = trg.sample_active_ms ? trg.sample_active_ms : 25;
+		bls_pm_registerAppWakeupLowPowerCb(irwm_ir_wakeup_cb);
+		bls_pm_setAppWakeupLowPower(now + (u32)period_ms * CLOCK_16M_SYS_TIMER_CLK_1MS, 1);
+	} else {
+		bls_pm_setAppWakeupLowPower(0, 0); // idle: deep-sleep on the advertising schedule
+	}
 }
 #endif
 
@@ -120,8 +118,9 @@ void rds_init(void) {
 #endif
 	rds.report_tick = wrk.utc_time_sec;
 #ifdef GPIO_IR
-	rds1_last_edge_tick = clock_time();
-	irwm_schedule_next_sample(); // bootstrap the adaptive IR sample wake
+	// Start idle (no dedicated wake) so the device deep-sleeps until flow is seen.
+	rds1_last_edge_tick = clock_time() - (u32)(IR_FLOW_HOLD_MS + 100) * CLOCK_16M_SYS_TIMER_CLK_1MS;
+	irwm_schedule_next_sample();
 #endif
 }
 

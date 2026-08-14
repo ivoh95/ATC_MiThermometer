@@ -655,7 +655,14 @@ _attribute_ram_code_
 static void suspend_enter_cb(u8 e, u8 *p, int n) {
 	(void) e; (void) p; (void) n;
 #if (DEV_SERVICES & SERVICE_RDS)
+#ifdef GPIO_IR
+	// IR pulses are read by the timer-scheduled strobe (get_rds1_input), not by
+	// edge wake. Arming an RDS1 pad wakeup here would wake the MCU on every
+	// receiver edge (incl. ambient/noise) and defeat deep sleep, so disable it.
+	cpu_set_gpio_wakeup(GPIO_RDS1, Level_Low, 0);
+#else
 	cpu_set_gpio_wakeup(GPIO_RDS1, BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff)? Level_Low : Level_High, trg.rds.type1 != RDS_NONE);  // pad wakeup deepsleep enable
+#endif
 #ifdef GPIO_RDS2
 	cpu_set_gpio_wakeup(GPIO_RDS2, BM_IS_SET(reg_gpio_in(GPIO_RDS2), GPIO_RDS2 & 0xff)? Level_Low : Level_High, trg.rds.type2 != RDS_NONE);  // pad wakeup deepsleep enable
 #endif
