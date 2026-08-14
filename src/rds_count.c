@@ -37,13 +37,27 @@ RAM	rds_count_t rds;		// Reed switch pulse counter
 RAM u8  rds1_beam_state;		// dead-band state for the IR optical read (get_rds1_input)
 RAM u32 rds1_last_edge_tick;	// clock_time() of the last counted pulse edge
 
-// How long after a pulse edge to keep the fast dedicated sample wake armed. While
-// "flowing" the device wakes every sample_active_ms for clean edge capture; once idle
-// the dedicated app wake is CLEARED so the device deep-sleeps on the advertising
-// schedule (rds_task still samples on each advert to catch flow onset). A permanent
-// app wake blocks deep sleep and drains the battery, so idle must release it.
+// Adaptive IR sample scheduler. A DEDICATED app low-power wake keeps rds_task sampling
+// the beam even while the radio is idle - counting cannot rely on the ~seconds advertise
+// wake (far too slow to catch a 4-8 Hz pulse train; flow onset is missed). The period
+// adapts to time-since-last-pulse so the fast rate is only used during real flow:
+//   flowing (edge < IR_FLOW_HOLD_MS ago)  -> sample_active_ms   (~60 ms)
+//   idle    (< IR_DEEPIDLE_ENTER_MS ago)  -> sample_idle_ms     (~250 ms)
+//   long silence                          -> sample_deepidle_ms (~1000 ms)
+// Battery: the BLE stack deep-sleeps (retention, uA) between wakes only when the next
+// wake is farther out than the adv retention threshold (blc_pm_setDeepsleepRetentionThreshold
+// = 40 ms); a shorter wake falls back to the higher-current suspend mode. So ALL three
+// periods MUST stay above ~40 ms - keep sample_active_ms >= ~50 ms. This is exactly why
+// the old 25 ms active rate drained (suspend) and the original branch's ~62 ms did not.
+// The wake is never fully cleared, so flow onset is always caught at the deep-idle rate.
+#ifndef IR_MIN_PERIOD_MS
+#define IR_MIN_PERIOD_MS		50		// floor: stay above the 40 ms retention threshold
+#endif
 #ifndef IR_FLOW_HOLD_MS
-#define IR_FLOW_HOLD_MS			2000	// stay in fast-sample mode this long after an edge
+#define IR_FLOW_HOLD_MS			2000	// stay at the active rate this long after an edge
+#endif
+#ifndef IR_DEEPIDLE_ENTER_MS
+#define IR_DEEPIDLE_ENTER_MS	120000	// drop to the deep-idle rate after this much silence
 #endif
 
 // Wake callback: the actual IR sample runs in main_loop -> rds_task after the wake,
@@ -51,21 +65,28 @@ RAM u32 rds1_last_edge_tick;	// clock_time() of the last counted pulse edge
 _attribute_ram_code_
 static void irwm_ir_wakeup_cb(int par) { (void)par; }
 
-// Arm the fast dedicated sample wake only while flow is recent; otherwise release it
-// so the device can deep-sleep between adverts.
 _attribute_ram_code_
 static void irwm_schedule_next_sample(void) {
 	u32 now = clock_time();
-	// Wrap-safe "recent edge?" test (signed diff is correct for intervals < ~134 s).
+	// Wrap-safe elapsed-since-edge (signed diff is valid for intervals < ~134 s).
 	s32 since_edge = (s32)(now - rds1_last_edge_tick);
+	u16 period_ms;
 	if (since_edge >= 0
 			&& (u32)since_edge < (u32)IR_FLOW_HOLD_MS * CLOCK_16M_SYS_TIMER_CLK_1MS) {
-		u16 period_ms = trg.sample_active_ms ? trg.sample_active_ms : 25;
-		bls_pm_registerAppWakeupLowPowerCb(irwm_ir_wakeup_cb);
-		bls_pm_setAppWakeupLowPower(now + (u32)period_ms * CLOCK_16M_SYS_TIMER_CLK_1MS, 1);
+		period_ms = trg.sample_active_ms;
+	} else if (since_edge >= 0
+			&& (u32)since_edge < (u32)IR_DEEPIDLE_ENTER_MS * CLOCK_16M_SYS_TIMER_CLK_1MS) {
+		period_ms = trg.sample_idle_ms;
 	} else {
-		bls_pm_setAppWakeupLowPower(0, 0); // idle: deep-sleep on the advertising schedule
+		period_ms = trg.sample_deepidle_ms;
+		// Re-anchor so the tick diff stays bounded (clock_time wraps ~every 268 s);
+		// keeps us in deep-idle until a real pulse updates rds1_last_edge_tick.
+		rds1_last_edge_tick = now - (u32)IR_DEEPIDLE_ENTER_MS * CLOCK_16M_SYS_TIMER_CLK_1MS;
 	}
+	if (period_ms < IR_MIN_PERIOD_MS)
+		period_ms = IR_MIN_PERIOD_MS;	// keep every wake above the retention threshold
+	bls_pm_registerAppWakeupLowPowerCb(irwm_ir_wakeup_cb);
+	bls_pm_setAppWakeupLowPower(now + (u32)period_ms * CLOCK_16M_SYS_TIMER_CLK_1MS, 1);
 }
 #endif
 
@@ -118,7 +139,9 @@ void rds_init(void) {
 #endif
 	rds.report_tick = wrk.utc_time_sec;
 #ifdef GPIO_IR
-	// Start idle (no dedicated wake) so the device deep-sleeps until flow is seen.
+	// Start in the idle tier (not "flowing"): backdate the edge past IR_FLOW_HOLD_MS so
+	// boot arms the idle-rate sample wake, ready to catch flow onset without paying the
+	// active rate up front.
 	rds1_last_edge_tick = clock_time() - (u32)(IR_FLOW_HOLD_MS + 100) * CLOCK_16M_SYS_TIMER_CLK_1MS;
 	irwm_schedule_next_sample();
 #endif
