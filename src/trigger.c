@@ -16,13 +16,10 @@
 
 const trigger_t def_trg = {
 #if (DEVICE_TYPE == DEVICE_IRWM)
-		// All three periods are kept ABOVE the 40 ms deep-sleep-retention threshold
-		// (blc_pm_setDeepsleepRetentionThreshold adv=40 ms) so the MCU deep-sleeps
-		// between every sample instead of dropping to the higher-current suspend mode.
-		// The original branch's proven ~62 ms measure cadence caught pulses fine.
-		.sample_active_ms = 60,     // ~16 Hz while flowing (matches original, > 40 ms -> retention)
-		.sample_idle_ms = 250,      // 4 Hz when idle (> 40 ms -> retention)
-		.sample_deepidle_ms = 1000, // 1 Hz after a long quiet spell
+		// All periods > the 40 ms deep-sleep-retention threshold (see rds_count.c).
+		.sample_active_ms = 60,     // while flowing
+		.sample_idle_ms = 250,      // when idle
+		.sample_deepidle_ms = 1000, // after a long quiet spell
 		.ml_per_pulse = 500,        // 0.5 L per pulse (0.001 L units)
 		.rds_time_report = 600,     // force a fresh report every 10 min
 		.rds.type1 = RDS_COUNTER,

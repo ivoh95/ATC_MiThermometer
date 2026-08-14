@@ -37,19 +37,11 @@ RAM	rds_count_t rds;		// Reed switch pulse counter
 RAM u8  rds1_beam_state;		// dead-band state for the IR optical read (get_rds1_input)
 RAM u32 rds1_last_edge_tick;	// clock_time() of the last counted pulse edge
 
-// Adaptive IR sample scheduler. A DEDICATED app low-power wake keeps rds_task sampling
-// the beam even while the radio is idle - counting cannot rely on the ~seconds advertise
-// wake (far too slow to catch a 4-8 Hz pulse train; flow onset is missed). The period
-// adapts to time-since-last-pulse so the fast rate is only used during real flow:
-//   flowing (edge < IR_FLOW_HOLD_MS ago)  -> sample_active_ms   (~60 ms)
-//   idle    (< IR_DEEPIDLE_ENTER_MS ago)  -> sample_idle_ms     (~250 ms)
-//   long silence                          -> sample_deepidle_ms (~1000 ms)
-// Battery: the BLE stack deep-sleeps (retention, uA) between wakes only when the next
-// wake is farther out than the adv retention threshold (blc_pm_setDeepsleepRetentionThreshold
-// = 40 ms); a shorter wake falls back to the higher-current suspend mode. So ALL three
-// periods MUST stay above ~40 ms - keep sample_active_ms >= ~50 ms. This is exactly why
-// the old 25 ms active rate drained (suspend) and the original branch's ~62 ms did not.
-// The wake is never fully cleared, so flow onset is always caught at the deep-idle rate.
+// Adaptive IR sample wake: fast while flowing, slow when idle, so counting doesn't rely
+// on the ~6 s advertise wake. All periods MUST stay above the 40 ms adv deep-sleep-
+// retention threshold (blc_pm_setDeepsleepRetentionThreshold) or the SoC drops from
+// retention (uA) to suspend (mA) between wakes - why 25 ms drained and ~60 ms doesn't.
+// Tiers: flowing -> sample_active_ms, idle -> sample_idle_ms, silence -> sample_deepidle_ms.
 #ifndef IR_MIN_PERIOD_MS
 #define IR_MIN_PERIOD_MS		50		// floor: stay above the 40 ms retention threshold
 #endif
@@ -79,8 +71,7 @@ static void irwm_schedule_next_sample(void) {
 		period_ms = trg.sample_idle_ms;
 	} else {
 		period_ms = trg.sample_deepidle_ms;
-		// Re-anchor so the tick diff stays bounded (clock_time wraps ~every 268 s);
-		// keeps us in deep-idle until a real pulse updates rds1_last_edge_tick.
+		// Re-anchor so the tick diff stays bounded across the ~268 s clock_time wrap.
 		rds1_last_edge_tick = now - (u32)IR_DEEPIDLE_ENTER_MS * CLOCK_16M_SYS_TIMER_CLK_1MS;
 	}
 	if (period_ms < IR_MIN_PERIOD_MS)

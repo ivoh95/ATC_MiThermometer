@@ -542,10 +542,8 @@ RAM attribute_t my_Attributes[] = {
 		{0,ATT_PERMISSIONS_RDWR,2,sizeof(anaValueInCCC),(u8*)(&clientCharacterCfgUUID),(u8*)(&anaValueInCCC), 0},	//value
 #endif
 #if (DEVICE_TYPE == DEVICE_IRWM)
-	////////////////////////////////////// Environmental Sensing (0x181A, empty) ////////////////////
-	// No sensor characteristics - present only so TelinkMiFlasher's customAction() sees the 0x181A
-	// service (devIdEnabled) and renders the full custom settings UI (with the 0x56 "Set default"
-	// button + counter/trigger config) instead of the cut-down ATC1441 command panel.
+	// Empty 0x181A service: only so TelinkMiFlasher (devIdEnabled) shows the full custom
+	// settings UI instead of the ATC1441 panel. No characteristics needed.
 	{2,ATT_PERMISSIONS_READ,2,2,(u8*)(&my_primaryServiceUUID),(u8*)(&my_envServiceUUID), 0},
 		{0,ATT_PERMISSIONS_READ,2,sizeof(my_EnvName),(u8*)(&userdesc_UUID),(u8*)(my_EnvName), 0},
 #endif

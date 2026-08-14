@@ -372,10 +372,8 @@ void cmd_parser(void * p) {
 			ble_send_cfg();
 		} else if (cmd == CMD_ID_CFG_DEF) { // Set default config
 #if (DEVICE_TYPE == DEVICE_IRWM)
-			// Full factory reset (cfg + trg) with reboot - identical to the GPIO long-press.
-			// On IRWM the IR sample/idle/deep-idle periods + ml_per_pulse live in trg, so a
-			// cfg-only reset would leave stale timings; route through set_default_cfg() to
-			// clear both and reboot from the freshly written flash defaults.
+			// Full reset (cfg + trg) + reboot, same as the GPIO long-press - IRWM keeps
+			// the IR periods + ml_per_pulse in trg, which a cfg-only reset would miss.
 			set_default_cfg();
 #else
 			u8 tmp = ((volatile u8 *)&cfg.flg2)[0];

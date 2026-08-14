@@ -758,10 +758,7 @@ void set_default_cfg(void) {
 	test_config();
 	flash_write_cfg(&cfg, EEP_ID_CFG, sizeof(cfg));
 #if (DEV_SERVICES & SERVICE_TH_TRG) || (DEV_SERVICES & SERVICE_RDS)
-	// Restore trigger config too. On IRWM these fields carry the IR
-	// sample/idle/deep-idle periods + ml_per_pulse; a unit flashed over an old
-	// build keeps stale EEP_ID_TRG bytes, so a factory reset must clear them as
-	// well. The reboot below re-inits everything from the freshly written flash.
+	// Reset trg too (IRWM keeps the IR periods + ml_per_pulse here); reboot re-inits it.
 	memcpy(&trg, &def_trg, FEEP_SAVE_SIZE_TRG);
 	flash_write_cfg(&trg, EEP_ID_TRG, FEEP_SAVE_SIZE_TRG);
 #endif
@@ -1153,10 +1150,8 @@ void main_loop(void) {
 			wrk.start_measure = 0;
 			check_battery();
 #if (DEVICE_TYPE == DEVICE_IRWM)
-			// No T/H sensor here, so read_sensors() (which normally sets these flags) is
-			// compiled out. Flag a completed measurement ourselves so the periodic BTHome
-			// data beacon (battery + count + water, alternating with voltage) refreshes in
-			// set_adv_data(); otherwise only the RDS count-only event beacon is ever sent.
+			// No sensor, so read_sensors() (which sets these) is compiled out; flag a
+			// measurement so the periodic data beacon (battery/voltage/water) still refreshes.
 			wrk.msc.all_flgs = 0xff;
 #endif
 #if (DEV_SERVICES & (SERVICE_THS | SERVICE_IUS | SERVICE_18B20 | SERVICE_PLM))

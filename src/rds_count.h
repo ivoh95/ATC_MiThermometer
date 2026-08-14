@@ -66,16 +66,15 @@ extern rds_count_t rds;		// Reed switch pulse counter
 #define IR_LO_THRES		4		// <= this many high reads -> beam blocked
 #endif
 #ifndef IR_SETTLE_US
-// Emitter-on to sample delay. The original working branch used 0 here (sampled
-// immediately) with the 1M pull-up, so a few us is plenty; the small margin just
-// covers the receiver's turn-on with the weak pull-up.
-#define IR_SETTLE_US	20		// emitter/receiver settle before sampling
+#define IR_SETTLE_US	20		// emitter-on to sample delay (original used 0)
 #endif
 extern u8 rds1_beam_state;		// persisted dead-band state (pre-invert)
 
 static inline u8 get_rds1_input(void) {
 	gpio_set_output_en(GPIO_IR, 1);
+	gpio_set_input_en(GPIO_IR, 0);
 	gpio_write(GPIO_IR, 1);				// strobe IR emitter on
+	gpio_set_input_en(GPIO_RDS1, 1);
 	sleep_us(IR_SETTLE_US);
 	u8 high = 0;
 	for (u8 i = 0; i < IR_SAMPLES; i++) {
@@ -84,11 +83,11 @@ static inline u8 get_rds1_input(void) {
 	}
 	gpio_write(GPIO_IR, 0);				// emitter off
 	gpio_set_output_en(GPIO_IR, 0);
+	gpio_set_input_en(GPIO_IR, 1);
 	if (high >= IR_HI_THRES)
 		rds1_beam_state = 1;			// beam clear
 	else if (high <= IR_LO_THRES)
-		rds1_beam_state = 0;			// beam blocked
-	// between the thresholds: hold the previous state (dead-band)
+		rds1_beam_state = 0;			// beam blocked (else: hold previous - dead-band)
 	u8 r = rds1_beam_state;
 	if(trg.rds.rs1_invert)
 		r ^= 1;
