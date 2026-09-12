@@ -23,6 +23,7 @@
 #include "bthome_beacon.h"
 #endif
 #include "rds_count.h"
+#include "battery.h"
 #if (USE_SENSOR_HX71X)
 #include "hx71x.h"
 #endif
@@ -78,6 +79,59 @@ static void irwm_schedule_next_sample(void) {
 		period_ms = IR_MIN_PERIOD_MS;	// keep every wake above the retention threshold
 	bls_pm_registerAppWakeupLowPowerCb(irwm_ir_wakeup_cb);
 	bls_pm_setAppWakeupLowPower(now + (u32)period_ms * CLOCK_16M_SYS_TIMER_CLK_1MS, 1);
+}
+
+// IR receiver read: strobe the emitter, sample the receiver level via ADC, and classify
+// it with an ADAPTIVE hysteresis threshold. The envelope (hi/lo) tracks the clear/blocked
+// levels with fast attack + slow decay, so the thresholds ride battery/LED drift; a steady
+// partial-block "leak" sits in the dead-band and can't toggle. If the swing collapses
+// (parked / no real flow) we stop deciding, which stops phantom counts.
+#ifndef IR_ADC_MIN_RANGE_MV
+#define IR_ADC_MIN_RANGE_MV	150		// need >= this clear-vs-blocked swing (mV) to decide
+#endif
+#ifndef IR_ADC_DECAY_SHL
+#define IR_ADC_DECAY_SHL	6		// envelope decay per sample: (gap >> 6) toward the level
+#endif
+RAM u16 rds1_adc_raw;				// last raw receiver level (mV) - beacon debug
+RAM u16 rds1_adc_hi;				// tracked high envelope (mV)
+RAM u16 rds1_adc_lo;				// tracked low envelope (mV)
+RAM u8  rds1_adc_seeded;
+
+u8 get_rds1_input(void) {
+	gpio_set_output_en(GPIO_IR, 1);
+	gpio_set_input_en(GPIO_IR, 0);
+	gpio_write(GPIO_IR, 1);				// strobe IR emitter on
+	sleep_us(IR_SETTLE_US);
+	u16 mv = get_adc_mv(SHL_ADC_RDS1);	// receiver level, emitter lit
+	gpio_write(GPIO_IR, 0);				// emitter off
+	gpio_set_output_en(GPIO_IR, 0);
+	gpio_set_input_en(GPIO_IR, 1);
+	rds1_adc_raw = mv;
+
+	if (!rds1_adc_seeded) {				// first sample: seed envelope, decide nothing yet
+		rds1_adc_hi = rds1_adc_lo = mv;
+		rds1_adc_seeded = 1;
+	}
+	// fast attack to new extremes, slow decay toward the current level
+	if (mv > rds1_adc_hi) rds1_adc_hi = mv;
+	else rds1_adc_hi -= (rds1_adc_hi - mv) >> IR_ADC_DECAY_SHL;
+	if (mv < rds1_adc_lo) rds1_adc_lo = mv;
+	else rds1_adc_lo += (mv - rds1_adc_lo) >> IR_ADC_DECAY_SHL;
+
+	// decide only on a real swing; hysteresis at 1/3 and 2/3 of the tracked range
+	u16 range = rds1_adc_hi - rds1_adc_lo;
+	if (range >= IR_ADC_MIN_RANGE_MV) {
+		u16 hi_thr = rds1_adc_lo + (u16)(((u32)range * 2) / 3);
+		u16 lo_thr = rds1_adc_lo + (u16)((u32)range / 3);
+		if (mv >= hi_thr) rds1_beam_state = 1;
+		else if (mv <= lo_thr) rds1_beam_state = 0;
+		// between thresholds: hold (dead-band)
+	}
+	// range too small (parked / no flow): hold state -> no toggle -> no phantom counts
+	u8 r = rds1_beam_state;
+	if (trg.rds.rs1_invert)
+		r ^= 1;
+	return r;
 }
 #endif
 

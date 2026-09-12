@@ -113,6 +113,10 @@ static u32 set_bthome_data2(padv_bthome_data2_t p) {
 		p->battery_mv = measured_data.battery_mv; // x mV
 #endif
 #endif
+#if (DEVICE_TYPE == DEVICE_IRWM)
+		p->dbg_id = BtHomeID_voltage;
+		p->dbg_mv = rds1_adc_raw; // debug: raw IR receiver level (mV)
+#endif
 #if (DEV_SERVICES & SERVICE_TH_TRG)
 #ifdef	GPIO_TRG2
 		p->s_id = BtHomeID_switch; //0x10

@@ -1540,15 +1540,25 @@ extern "C" {
 #define PA1_FUNC			AS_GPIO
 #define PULL_WAKEUP_SRC_PA1	PM_PIN_PULLDOWN_100K
 
-// IR receiver output (RDS1 counter path). MUST be the weak 1M pull-up: a 10K one
-// overpowers the receiver so PD3 never toggles -> no counting.
+// IR receiver -> ADC input on PB7 (B7P). Read as an analog level (get_adc_mv) with an
+// adaptive hysteresis threshold, so a partial-block "leak" level lands in the dead-band
+// and can't toggle. The 1M pull-up is the phototransistor load (add a ~100K external if
+// the ADC swing is weak). LED emitter stays on PB5.
+#define SHL_ADC_RDS1		8	// "B7P" in adc.h - IR receiver ADC channel
 #define RDS1_PULLUP			PM_PIN_PULLUP_1M
-#define GPIO_RDS1			GPIO_PD3
-#define PD3_INPUT_ENABLE	1
+#define GPIO_RDS1			GPIO_PB7
+#define PB7_INPUT_ENABLE	1
+#define PB7_DATA_OUT		0
+#define PB7_OUTPUT_ENABLE	0
+#define PB7_FUNC			AS_GPIO
+#define PULL_WAKEUP_SRC_PB7	RDS1_PULLUP
+
+// PD3 - free (was the IR receiver, now moved to PB7)
+#define PD3_INPUT_ENABLE	0
 #define PD3_DATA_OUT		0
 #define PD3_OUTPUT_ENABLE	0
 #define PD3_FUNC			AS_GPIO
-#define PULL_WAKEUP_SRC_PD3	RDS1_PULLUP
+#define PULL_WAKEUP_SRC_PD3	PM_PIN_PULLDOWN_100K
 
 #define USE_AVERAGE_TH_SHL  2
 

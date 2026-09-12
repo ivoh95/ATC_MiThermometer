@@ -227,6 +227,10 @@ typedef struct __attribute__((packed)) _adv_bthome_data2_t {
 	u8	v_id;	// = BtHomeID_voltage 0x0c
 	u16	battery_mv; // mV
 #endif
+#if (DEVICE_TYPE == DEVICE_IRWM)
+	u8	dbg_id;	// = BtHomeID_voltage 0x0c (debug: raw IR receiver level, mV -> HA "Voltage 2")
+	u16	dbg_mv;
+#endif
 #if (DEV_SERVICES & SERVICE_TH_TRG)
 	u8	s_id;	// = BtHomeID_switch 0x10
 	u8	swtch;

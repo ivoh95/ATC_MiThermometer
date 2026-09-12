@@ -51,48 +51,19 @@ extern rds_count_t rds;		// Reed switch pulse counter
 
 #ifdef GPIO_RDS1
 #ifdef GPIO_IR
-// IR optical pulse read (DEVICE_IRWM). The IR emitter is strobed on only for the
-// sample. As the meter's fork crosses the beam the receiver dwells near the input
-// threshold, so a single threshold would chatter and over-count; two thresholds
-// plus a held state give a dead-band (values between them keep the previous level),
-// so one tooth = exactly one edge.
-#ifndef IR_SAMPLES
-#define IR_SAMPLES		24		// reads per strobe
-#endif
-#ifndef IR_HI_THRES
-#define IR_HI_THRES		20		// >= this many high reads -> beam clear
-#endif
-#ifndef IR_LO_THRES
-#define IR_LO_THRES		4		// <= this many high reads -> beam blocked
-#endif
+// IR optical pulse read (DEVICE_IRWM): the emitter (PB5) is strobed on for each sample
+// and the receiver level is read via the ADC on GPIO_RDS1, then classified with an
+// adaptive hysteresis threshold - see get_rds1_input() in rds_count.c. Reading the true
+// analog level (not a 1-bit digital compare) lets a partial-block "leak" sit steady in
+// the dead-band so it can't toggle and generate phantom counts.
 #ifndef IR_SETTLE_US
-#define IR_SETTLE_US	20		// emitter-on to sample delay (original used 0)
+#define IR_SETTLE_US	500		// emitter-on to ADC-sample settle (us)
 #endif
-extern u8 rds1_beam_state;		// persisted dead-band state (pre-invert)
-
-static inline u8 get_rds1_input(void) {
-	gpio_set_output_en(GPIO_IR, 1);
-	gpio_set_input_en(GPIO_IR, 0);
-	gpio_write(GPIO_IR, 1);				// strobe IR emitter on
-	gpio_set_input_en(GPIO_RDS1, 1);
-	sleep_us(IR_SETTLE_US);
-	u8 high = 0;
-	for (u8 i = 0; i < IR_SAMPLES; i++) {
-		if (BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff))
-			high++;
-	}
-	gpio_write(GPIO_IR, 0);				// emitter off
-	gpio_set_output_en(GPIO_IR, 0);
-	gpio_set_input_en(GPIO_IR, 1);
-	if (high >= IR_HI_THRES)
-		rds1_beam_state = 1;			// beam clear
-	else if (high <= IR_LO_THRES)
-		rds1_beam_state = 0;			// beam blocked (else: hold previous - dead-band)
-	u8 r = rds1_beam_state;
-	if(trg.rds.rs1_invert)
-		r ^= 1;
-	return r;
-}
+extern u8  rds1_beam_state;		// decided beam state (pre-invert)
+extern u16 rds1_adc_raw;		// last raw receiver level (mV) - exposed for beacon debug
+extern u16 rds1_adc_hi;			// tracked high envelope (mV)
+extern u16 rds1_adc_lo;			// tracked low envelope (mV)
+u8 get_rds1_input(void);		// ADC read + adaptive hysteresis (rds_count.c)
 #else
 static inline u8 get_rds1_input(void) {
 	u8 r = BM_IS_SET(reg_gpio_in(GPIO_RDS1), GPIO_RDS1 & 0xff)? 1 : 0;
